@@ -19,6 +19,8 @@ package core;
 import core.State;
 import core.Task;
 import core.Action;
+
+import java.util.ArrayList;
 import java.util.Random;
 
 /**
@@ -107,6 +109,39 @@ public abstract class GibbsPolicy extends Policy {
 
         return new Action(bestAction, probabilities[bestAction]);
     }
+    
+    /*
+     * written by yjw
+     * make decision within available action set
+     */
+    public Action makeDecisionStochastic(State s, Task t, double[] probabilities, ArrayList<Integer> usedAction, Random outRand) {
+        if (m_numIteration == 0 || probabilities == null) {
+            return null;
+        }
+
+        Random thisRand = outRand == null ? m_random : outRand;
+        int K = t.actions.length;
+
+        ArrayList<Integer> availabelAction = new ArrayList<Integer>();
+        for(int k = 0; k < K; k++){
+        	if(!usedAction.contains(k))
+        		availabelAction.add(k);
+        }
+        int bestAction = availabelAction.get(0), m = 2;
+        for (int k = 0; k < availabelAction.size(); k++) {
+            if (probabilities[availabelAction.get(k)] > probabilities[bestAction] + Double.MIN_VALUE) {
+                bestAction = availabelAction.get(k);
+                m = 2;
+            } else if (Math.abs(probabilities[availabelAction.get(k)] - probabilities[bestAction]) <= Double.MIN_VALUE) {
+                if (thisRand.nextDouble() < 1.0 / m) {
+                    bestAction = availabelAction.get(k);
+                }
+                m++;
+            }
+        }
+
+        return new Action(bestAction, probabilities[bestAction]);
+    }
 
     /**
      * Calculate the probabilities of each action
@@ -155,4 +190,6 @@ public abstract class GibbsPolicy extends Policy {
 
         return probabilities;
     }
+
+	
 }

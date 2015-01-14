@@ -5,12 +5,14 @@ import core.State;
 import core.Task;
 import core.Trajectory;
 import core.Tuple;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.REPTree;
 import weka.classifiers.trees.RandomForest;
@@ -316,6 +318,36 @@ public class PolicyBoostDiscrete extends GibbsPolicy {
             } else if (Math.abs(probabilities[k] - probabilities[bestAction]) <= Double.MIN_VALUE) {
                 if (thisRand.nextDouble() < 1.0 / m) {
                     bestAction = k;
+                }
+                m++;
+            }
+        }
+
+        return new Action(bestAction, probabilities[bestAction]);
+    }
+    
+    @Override
+    public Action makeDecisionStochastic(State s, Task t, double[] probabilities, ArrayList<Integer> usedAction, Random outRand){
+    	if (m_numIteration == 0 || probabilities == null) {
+            return null;
+        }
+
+        Random thisRand = outRand == null ? m_random : outRand;
+        int K = t.actions.length;
+
+        ArrayList<Integer> availabelAction = new ArrayList<Integer>();
+        for(int k = 0; k < K; k++){
+        	if(!usedAction.contains(k))
+        		availabelAction.add(k);
+        }
+        int bestAction = availabelAction.get(0), m = 2;
+        for (int k = 0; k < availabelAction.size(); k++) {
+            if (probabilities[availabelAction.get(k)] > probabilities[bestAction] + Double.MIN_VALUE) {
+                bestAction = availabelAction.get(k);
+                m = 2;
+            } else if (Math.abs(probabilities[availabelAction.get(k)] - probabilities[bestAction]) <= Double.MIN_VALUE) {
+                if (thisRand.nextDouble() < 1.0 / m) {
+                    bestAction = availabelAction.get(k);
                 }
                 m++;
             }

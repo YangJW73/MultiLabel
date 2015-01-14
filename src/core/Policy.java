@@ -21,7 +21,9 @@ import core.State;
 import core.Task;
 import core.Action;
 import core.Trajectory;
+
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -43,7 +45,7 @@ public abstract class Policy implements Serializable {
      * @return action in <code>Action</code>
      */
     public abstract Action makeDecisionStochastic(State s, Task t, Random random);
-
+    
     /** 
      * Make a decision with probability 1
      * @param s current state
@@ -78,4 +80,10 @@ public abstract class Policy implements Serializable {
     public Random getRandom() {
         return m_random;
     }
+
+	public Action makeDecisionStochastic(State s, Task t,
+			ArrayList<Integer> usedAction, Random outRand) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

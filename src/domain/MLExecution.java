@@ -27,17 +27,13 @@ public class MLExecution {
         while (step < maxStep && !task.isComplete(sPrime)) {
             s = sPrime;
 
-            action = isStochastic ? policy.makeDecisionStochastic(s, task, random) : policy.makeDecisionDeterministic(s, task, random);
+            //System.out.println("processing step "+step);
+            action = isStochastic ? policy.makeDecisionStochastic(s, task, predictOrder, random) : policy.makeDecisionDeterministic(s, task, random);
+            //System.out.println("order array size "+predictOrder.size());
+            while(predictOrder.contains(action.a))
+            	action = isStochastic ? policy.makeDecisionStochastic(s, task, predictOrder, random) : policy.makeDecisionDeterministic(s, task, random);
             
-            if(predictOrder!=null){
-            	while(predictOrder.contains(action.a))
-                	action = isStochastic ? policy.makeDecisionStochastic(s, task, random) : policy.makeDecisionDeterministic(s, task, random);
-                
-                predictOrder.add(action.a);
-            }
-            else{
-            	predictOrder.add(action.a);
-            }
+            predictOrder.add(action.a);
             
             sPrime = (MLState) task.transition(s, action, random);
             reward = task.immediateReward(sPrime);

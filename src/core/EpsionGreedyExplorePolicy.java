@@ -20,6 +20,8 @@ import core.State;
 import core.Task;
 import core.Action;
 import core.Trajectory;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -61,6 +63,28 @@ public class EpsionGreedyExplorePolicy extends Policy {
         Random thisRand = outRand == null ? m_random : outRand;
         double[] probabilities = ((GibbsPolicy) policy).getProbability(s, t);
         Action policyAction = ((GibbsPolicy) policy).makeDecisionStochastic(s, t, probabilities, thisRand);
+
+        Action action;
+        if (thisRand.nextDouble() < epsion || policyAction == null) {
+            action = new Action(rp.makeDecisionDeterministic(s, t, thisRand), -1);
+            action.setProbability(epsion);
+        } else {
+            action = new Action(policyAction, -1);
+        }
+
+        if (policyAction == null) {
+            action.setProbability(1.0 / t.actions.length);
+        } else {
+            action.setProbability(epsion / t.actions.length + (1 - epsion) * probabilities[action.a]);
+        }
+        return action;
+    }
+    
+    @Override
+    public Action makeDecisionStochastic(State s, Task t, ArrayList<Integer> usedAction, Random outRand) {
+        Random thisRand = outRand == null ? m_random : outRand;
+        double[] probabilities = ((GibbsPolicy) policy).getProbability(s, t);
+        Action policyAction = ((GibbsPolicy) policy).makeDecisionStochastic(s, t, probabilities,usedAction, thisRand);
 
         Action action;
         if (thisRand.nextDouble() < epsion || policyAction == null) {
