@@ -56,16 +56,17 @@ public class MLExperiment {
     }
 
     public void trainPolicy(PolicyBoostDiscrete policy, MLTask task, int iteration, int trialsPerIter,
-            MLState initialState, int maxStep, boolean isPara, double epsion, Random random) {
+            /*MLState initialState,*/ int maxStep, boolean isPara, double epsion, Random random) {
 
     	double maxReward = Double.NEGATIVE_INFINITY;
     	
-    	for (int iter = 0; iter < iteration; iter++) {System.out.println("processing iter "+iter);
+    	for (int iter = 0; iter < iteration; iter++) {//System.out.println("processing iter "+iter);
     		Policy explorePolicy = new EpsionGreedyExplorePolicy(policy, epsion, new Random(random.nextInt()));
     		List<ParallelExecute> list = new ArrayList<ParallelExecute>();
 
             ExecutorService exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() - 1);
-            for (int i = 0; i < trialsPerIter; i++) {System.out.println("processing trial "+i);
+            for (int i = 0; i < trialsPerIter; i++) {//System.out.println("processing trial "+i+"--------------------------");
+            	MLState initialState = (MLState)task.getInitialState();
                 ParallelExecute run = new ParallelExecute(task, explorePolicy, initialState, maxStep, true, random.nextInt());
                 list.add(run);
                 if (isPara && iter > 0) {
@@ -95,7 +96,7 @@ public class MLExperiment {
                 	maxReward = totalReward;
                 	bestTraj = rollout;
                 }
-            }
+            }System.out.println("total reward: "+maxReward);
             policy.update(rollouts);
     	}
     }

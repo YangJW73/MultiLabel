@@ -4,8 +4,11 @@ import java.util.*;
 
 import mulan.data.MultiLabelInstances;
 import weka.classifiers.Classifier;
+import weka.classifiers.functions.SMO;
+import weka.classifiers.meta.FilteredClassifier;
 import weka.classifiers.trees.J48;
 import weka.core.*;
+import weka.filters.unsupervised.attribute.Remove;
 import core.Action;
 import core.State;
 import core.Task;
@@ -25,15 +28,15 @@ public class MLTask extends Task{
 		this.labelNum = dataSet.getNumLabels();
 		this.random = random;
 		this.actions = new Action[labelNum];
-		this.groundTruth = new double[instNum][labelNum];
+		this.groundTruth = new double[labelNum][instNum];//this.groundTruth = new double[instNum][labelNum];
 		this.realLabelDis = new double[labelNum];
 		Instances data = dataSet.getDataSet();
 		this.trainingData = new Instances(dataSet.getDataSet());
 		this.labelIndices = dataSet.getLabelIndices();
 		for(int i = 0; i<instNum; i++){
 			for(int j = 0; j<labelNum; j++){
-				this.groundTruth[i][j] = data.instance(i).value(labelIndices[j]);
-				this.realLabelDis[j]+= this.groundTruth[i][j];
+				this.groundTruth[j][i] = data.instance(i).value(labelIndices[j]);
+				this.realLabelDis[j]+= this.groundTruth[j][i];
 			}
 		}
 		for(int a = 0; a<labelNum; a++)
@@ -54,7 +57,7 @@ public class MLTask extends Task{
 	
 	double [][] setNewLabel(MLState s, Classifier c, int labelIndex){
 		double newLabelSpace[][] = s.labelSpace;
-		for(int i = 0; i<trainingData.numInstances(); i++){
+		/*for(int i = 0; i<trainingData.numInstances(); i++){
 			for(int j = 0; j<this.labelNum; j++){
 				if(this.labelIndices[j] == labelIndex){
 					try {
@@ -67,6 +70,18 @@ public class MLTask extends Task{
 					}
 				}
 			}	
+		}*/
+		
+		for(int i = 0; i<trainingData.numInstances(); i++){
+			int j = labelIndex - this.labelIndices[0];
+			try {
+				double predict = c.classifyInstance(trainingData.instance(i));
+				newLabelSpace[j][i] = predict;
+				trainingData.instance(i).setValue(labelIndex, predict);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		return newLabelSpace;
 	}
@@ -77,20 +92,41 @@ public class MLTask extends Task{
 		Random thisRand = outRand == null ? random : outRand;
 		MLState mls = (MLState) s;
 		int move = a.a;
+		mls.isPredicted[move] = true;
 		if(move<labelNum){
-			trainingData.setClassIndex(labelIndices[move]);
 			for(int i = 0; i<trainingData.numInstances(); i++){
-				trainingData.instance(i).setValue(labelIndices[move], groundTruth[i][move]);
+				trainingData.instance(i).setValue(labelIndices[move], groundTruth[move][i]);
 			}
-			J48 dt = new J48();
+			ArrayList<Integer> tmp = new ArrayList<Integer>();
+			for(int i = 0; i<mls.isPredicted.length; i++){
+				if(!mls.isPredicted[i])
+					tmp.add(i);
+			}
+			int [] indicesToRemove = new int [tmp.size()];
+			for(int i = 0; i<indicesToRemove.length; i++)
+				indicesToRemove[i] = labelIndices[tmp.get(i)];
+			Remove remove = new Remove();
+			remove.setAttributeIndicesArray(indicesToRemove);
 			try {
-				dt.buildClassifier(trainingData);
+				remove.setInputFormat(trainingData);
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			remove.setInvertSelection(false);
+			FilteredClassifier c = new FilteredClassifier();
+			c.setClassifier(new J48());
+			c.setFilter(remove);
+			//SMO dt = new SMO();
+			try {
+				trainingData.setClassIndex(labelIndices[move]);
+				c.buildClassifier(trainingData);
 				//baseClassifiers.add(dt);
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			return new MLState(setNewLabel(mls,dt,labelIndices[move]),this.labelNum, dt);
+			return new MLState(setNewLabel(mls,c,labelIndices[move]), mls.isPredicted,this.labelNum, c);
 		}
 		else if(move == labelNum){
 			System.out.println("bazinga!");
@@ -102,7 +138,8 @@ public class MLTask extends Task{
 	public double immediateReward(State s) {
 		// TODO Auto-generated method stub
 		MLState mls = (MLState) s;
-		return MLReward.getHammingLoss(mls, groundTruth);
+		//return MLReward.getHammingLoss(mls, groundTruth);
+		return MLReward.getAccuracy(mls, groundTruth);
 	}
 
 	@Override
@@ -116,9 +153,9 @@ public class MLTask extends Task{
 			}
 		}
 		if(isSame){
-			for(int i = 0; i<instNum; i++){
-				for(int j = 0; j<labelNum; j++){
-					if(Double.compare(mls.labelSpace[i][j], groundTruth[i][j])!=0){
+			for(int j = 0; j<labelNum; j++){
+				for(int i = 0; i<instNum; i++){
+					if(Double.compare(mls.labelSpace[j][i], groundTruth[j][i])!=0){
 						isSame = false;
 					}
 				}

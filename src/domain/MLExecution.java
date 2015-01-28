@@ -31,20 +31,22 @@ public class MLExecution {
             action = isStochastic ? policy.makeDecisionStochastic(s, task, predictOrder, random) : policy.makeDecisionDeterministic(s, task, random);
             //System.out.println("order array size "+predictOrder.size());
             while(predictOrder.contains(action.a))
+           // while(s.isPredicted[action.a])
             	action = isStochastic ? policy.makeDecisionStochastic(s, task, predictOrder, random) : policy.makeDecisionDeterministic(s, task, random);
             
-            predictOrder.add(action.a);
-            
             sPrime = (MLState) task.transition(s, action, random);
-            reward = task.immediateReward(sPrime);
+            predictOrder.add(action.a);
+            //sPrime.isPredicted[action.a] = true;
+            reward = task.immediateReward(sPrime);//System.out.println("reward: "+reward);
             samples.add(new Tuple(s, action, reward, sPrime));
 
             rewards = rewards + reward;
             step = step + 1;
         }
 
+        System.out.println(predictOrder.toString());
         Trajectory rollout = new Trajectory(task, samples, maxStep, task.isComplete(sPrime));
-        rollout.setRewards((rewards + reward * (maxStep - step)) / maxStep);
+        rollout.setRewards((rewards + reward * (maxStep - step)) / maxStep);System.out.println(rollout.getRewards());
         return rollout;
     }
 }

@@ -13,10 +13,12 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.trees.REPTree;
 import weka.classifiers.trees.RandomForest;
 import weka.core.Attribute;
+import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -202,7 +204,7 @@ public class PolicyBoostDiscrete extends GibbsPolicy {
     public Classifier getBaseLearner() {
         Classifier c = null;
         try {
-            c = Classifier.makeCopy(m_base);
+            c = AbstractClassifier.makeCopy(m_base);
         } catch (Exception ex) {
             Logger.getLogger(PolicyBoostDiscrete.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -218,7 +220,7 @@ public class PolicyBoostDiscrete extends GibbsPolicy {
     public Classifier getNappingBaseLearner() {
         Classifier c = null;
         try {
-            c = Classifier.makeCopy(m_napBase);
+            c = AbstractClassifier.makeCopy(m_napBase);
         } catch (Exception ex) {
             Logger.getLogger(PolicyBoostDiscrete.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -396,7 +398,7 @@ public class PolicyBoostDiscrete extends GibbsPolicy {
         double[] values = new double[D + 1];
         values[D] = label;
         System.arraycopy(stateActionTaskFeature, 0, values, 0, D);
-        Instance ins = new Instance(1.0, values);
+        DenseInstance ins = new DenseInstance(1.0, values);
         return ins;
     }
 
@@ -408,18 +410,18 @@ public class PolicyBoostDiscrete extends GibbsPolicy {
      * @return Instances
      */
     public Instances constructDataHead(int D, int na) {
-        FastVector attInfo_x = new FastVector();
+    	ArrayList<Attribute> attInfo_x = new ArrayList<Attribute>();
         for (int i = 0; i < D - 1; i++) {
-            attInfo_x.addElement(new Attribute("att_" + i, i));
+            attInfo_x.add(new Attribute("att_" + i, i));
         }
 
-        FastVector att = new FastVector(na);
+        ArrayList<String> att = new ArrayList<String>(na);
         for (int i = 0; i < na; i++) {
-            att.addElement("" + i);
+            att.add("" + i);
         }
-        attInfo_x.addElement(new Attribute("action", att, D - 1));
+        attInfo_x.add(new Attribute("action", att, D - 1));
 
-        attInfo_x.addElement(new Attribute("class", D));
+        attInfo_x.add(new Attribute("class", D));
         Instances data = new Instances("dataHead", attInfo_x, 0);
         data.setClassIndex(data.numAttributes() - 1);
         return data;
@@ -578,7 +580,7 @@ public class PolicyBoostDiscrete extends GibbsPolicy {
                 fea[k] = ins.value(k);
             }
             fea[fea.length - 1] = maxInd;
-            Instance ins2 = new Instance(1, fea);
+            DenseInstance ins2 = new DenseInstance(1, fea);
             sampledData.add(ins2);
         }
 
@@ -609,7 +611,7 @@ public class PolicyBoostDiscrete extends GibbsPolicy {
         int D = stateFeature.length;
         double[] values = new double[D + 1];
         System.arraycopy(stateFeature, 0, values, 0, D);
-        Instance ins = new Instance(weight, values);
+        DenseInstance ins = new DenseInstance(weight, values);
         return ins;
     }
 
@@ -621,16 +623,16 @@ public class PolicyBoostDiscrete extends GibbsPolicy {
      * @return The Instances
      */
     public Instances constructDataHead2(int D, int na) {
-        FastVector attInfo_x = new FastVector();
+        ArrayList<Attribute> attInfo_x = new ArrayList<Attribute>();
         for (int i = 0; i < D; i++) {
-            attInfo_x.addElement(new Attribute("att_" + i, i));
+            attInfo_x.add(new Attribute("att_" + i, i));
         }
 
-        FastVector att = new FastVector(na);
+        ArrayList<String> att = new ArrayList<String>(na);
         for (int i = 0; i < na; i++) {
-            att.addElement("" + i);
+            att.add("" + i);
         }
-        attInfo_x.addElement(new Attribute("class", att, D));
+        attInfo_x.add(new Attribute("class", att, D));
 
         Instances data = new Instances("dataHead", attInfo_x, 0);
         data.setClassIndex(data.numAttributes() - 1);
